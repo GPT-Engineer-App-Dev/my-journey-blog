@@ -1,16 +1,33 @@
-import { Box, Container, Flex, Heading, Text, VStack, HStack, Spacer, Link, Button, useColorModeValue } from "@chakra-ui/react";
-import { FaHome, FaUser, FaEnvelope } from "react-icons/fa";
-import { useEffect, useState } from "react";
+import { Box, Container, Flex, Heading, Text, VStack, HStack, Spacer, Link, Button, useColorModeValue, IconButton, AlertDialog, AlertDialogBody, AlertDialogFooter, AlertDialogHeader, AlertDialogContent, AlertDialogOverlay } from "@chakra-ui/react";
+import { FaHome, FaUser, FaEnvelope, FaTrash } from "react-icons/fa";
+import { useEffect, useState, useRef } from "react";
 
 const Index = () => {
   const [posts, setPosts] = useState([]);
   const bg = useColorModeValue("gray.100", "gray.700");
   const color = useColorModeValue("black", "white");
 
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedPost, setSelectedPost] = useState(null);
+  const onClose = () => setIsOpen(false);
+  const cancelRef = useRef();
+
   useEffect(() => {
     const storedPosts = JSON.parse(localStorage.getItem("posts")) || [];
     setPosts(storedPosts);
   }, []);
+
+  const handleDeleteClick = (post) => {
+    setSelectedPost(post);
+    setIsOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    const updatedPosts = posts.filter((post) => post !== selectedPost);
+    localStorage.setItem("posts", JSON.stringify(updatedPosts));
+    setPosts(updatedPosts);
+    onClose();
+  };
 
   return (
     <Container maxW="container.xl" p={0} bg={bg} color={color}>
@@ -46,9 +63,17 @@ const Index = () => {
           </Button>
           <VStack spacing={8} align="stretch">
             {posts.map((post, index) => (
-              <Box key={index} p={5} shadow="md" borderWidth="1px">
+              <Box key={index} p={5} shadow="md" borderWidth="1px" position="relative">
                 <Heading fontSize="xl">{post.title}</Heading>
                 <Text mt={4}>{post.content}</Text>
+                <IconButton
+                  icon={<FaTrash />}
+                  colorScheme="red"
+                  position="absolute"
+                  top="1rem"
+                  right="1rem"
+                  onClick={() => handleDeleteClick(post)}
+                />
               </Box>
             ))}
           </VStack>
@@ -72,6 +97,31 @@ const Index = () => {
           </VStack>
         </Box>
       </Flex>
+
+      <AlertDialog
+        isOpen={isOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={onClose}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Delete Post
+            </AlertDialogHeader>
+            <AlertDialogBody>
+              Are you sure you want to delete this post? This action cannot be undone.
+            </AlertDialogBody>
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={onClose}>
+                Cancel
+              </Button>
+              <Button colorScheme="red" onClick={handleDeleteConfirm} ml={3}>
+                Delete
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </Container>
   );
 };
